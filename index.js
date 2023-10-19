@@ -1,13 +1,54 @@
 const API =
   "https://maps.googleapis.com/maps/api/place/textsearch/json?query=bar&key=AIzaSyASuJcv2I7IQEN31z6fnFa0SYn1v4SOgic&latitude=40.713012&longitude=-73.961638&radius=6500";
+let token;
+var x = 0;
 
 async function logBars() {
   const response = await fetch(API);
   const bars = await response.json();
   for (let i = 0; i < bars["results"].length - 1; i++) {
-    logHours(bars["results"][i]);
+    await logHours(bars["results"][i]);
+  }
+  token = bars.next_page_token;
+  const tokenResponse = await fetch(
+    `https://maps.googleapis.com/maps/api/place/textsearch/json?key=AIzaSyASuJcv2I7IQEN31z6fnFa0SYn1v4SOgic&pagetoken=${token}`
+  );
+  const bars2 = await tokenResponse.json();
+  for (let i = 0; i < bars2["results"].length - 1; i++) {
+    await logHours(bars2["results"][i]);
+  }
+  token = bars2.next_page_token;
+  const tokenResponse2 = await fetch(
+    `https://maps.googleapis.com/maps/api/place/textsearch/json?key=AIzaSyASuJcv2I7IQEN31z6fnFa0SYn1v4SOgic&pagetoken=${token}`
+  );
+  const bars3 = await tokenResponse2.json();
+  for (let i = 0; i < bars3["results"].length - 1; i++) {
+    await logHours(bars3["results"][i]);
   }
 }
+
+// const consoleLog = (bars) => {
+//   console.log(x);
+//   for (let i = 0; i < bars["results"].length - 1; i++) {
+//     logHours(bars["results"][i]);
+//   }
+//   x += 1;
+// };
+
+// async function nextPageToken(token) {
+//   const tokenResponse = await fetch(
+//     `https://maps.googleapis.com/maps/api/place/textsearch/json?key=AIzaSyASuJcv2I7IQEN31z6fnFa0SYn1v4SOgic&pagetoken=${token}`
+//   );
+//   const bars = await tokenResponse.json();
+//   // console.log(bars);
+//   consoleLog(bars);
+//   token = bars.next_page_token;
+//   const tokenResponse2 = await fetch(
+//     `https://maps.googleapis.com/maps/api/place/textsearch/json?key=AIzaSyASuJcv2I7IQEN31z6fnFa0SYn1v4SOgic&pagetoken=${token}`
+//   );
+//   const bars2 = await tokenResponse2.json();
+//   consoleLog(bars2);
+// }
 
 async function logHours(bar) {
   var apiUrl = `https://maps.googleapis.com/maps/api/place/details/json?fields=opening_hours&place_id=${bar["place_id"]}&key=AIzaSyASuJcv2I7IQEN31z6fnFa0SYn1v4SOgic`;
@@ -15,12 +56,16 @@ async function logHours(bar) {
   const barHours = await response.json();
   var name = bar["name"];
   var hours = await barHours;
-  var hoursString = JSON.stringify(hours);
-  var saturdayHours = hours.result.opening_hours.periods[5].close.time;
-  //   console.log(hours.result.opening_hours.periods[5].close.time);
-  if (saturdayHours === "0200") {
-    console.log("name: " + name);
+  if (hours.result.opening_hours.weekday_text[5] === "Closed") {
+    var saturdayClose = "closed";
+  } else {
+    var saturdayHours = hours.result.opening_hours.weekday_text[5];
+    var saturdayClose = saturdayHours.substring(
+      saturdayHours.length - 8,
+      saturdayHours.length
+    );
   }
+  console.log(name + " " + saturdayClose);
 }
 
 logBars();
