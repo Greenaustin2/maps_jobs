@@ -1,11 +1,24 @@
-import "dotenv/config";
-import * as cheerio from "cheerio";
-import { default as axios } from "axios";
+// import "dotenv/config";
+// import * as cheerio from "cheerio";
+// import axios from "axios";
+// import emailjs from "@emailjs/browser";
+// import * as fs from "fs";
+require("dotenv").config();
+const cheerio = require("cheerio");
+const axios = require("axios");
+var fs = require("fs");
+const emailjs = require("@emailjs/browser");
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+var xhr = new XMLHttpRequest();
+// const readline = require("readline");
 
 let token;
 const apiKey = process.env.API_KEY;
 
 var x = 0;
+const serviceId = process.env.SERVICE_ID;
+const templateId = process.env.TEMPLATE_ID;
+const publicKey = process.env.PUBLIC_KEY;
 
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
 
@@ -22,7 +35,7 @@ async function logBars() {
   // console.log(api);
   const response = await fetch(api);
   const bars = await response.json();
-  console.log(await bars);
+  // console.log(await bars);
 
   for (let i = 0; i < bars["results"].length - 1; i++) {
     await logHours(await bars["results"][i]);
@@ -56,8 +69,15 @@ async function logHours(bar) {
   const barHours = await response.json();
   var name = bar["name"];
   var hours = await barHours;
-  console.log(hours.result.website);
-  scrape(hours.result.website);
+  // console.log(hours.result.website);
+  if (hours.result.website) {
+    // var email = await scrape(hours.result.website);
+    if (email) {
+      // console.log(email);
+    }
+  } else {
+    var email = null;
+  }
   //take saturday closing time and reduce from timecode string to single integer
   if (!hours.result.opening_hours) {
     var saturdayClose = "no hours";
@@ -82,17 +102,81 @@ async function logHours(bar) {
     (closingInteger >= 1 && closingInteger <= 5) ||
     (closingInteger >= 9 && closingInteger <= 12)
   ) {
-    // console.log(closingInteger);
     console.log(name + " " + saturdayClose);
   }
 }
 
-async function scrape() {
-  const webPage = await axios.get("https://radegasthall.com/");
-  const $ = cheerio.load(webPage);
-  const emailAddress = $("a").find();
-  console.log(emailAddress._root.children);
+//scrape for emails
+async function scrape(url) {
+  const webPage = await axios.get(url);
+  const $ = cheerio.load(webPage.data);
+  var hrefs = $("a[href]")
+    .map((i, el) => $(el).attr("href"))
+    .get();
+  // console.log(hrefs);
+  for (let i = 0; i < hrefs.length; i++) {
+    // console.log(hrefs[i]);
+    if (hrefs[i].includes("mailto:")) {
+      var email = hrefs[i].split(":").pop().split(".com").shift() + ".com";
+      console.log(email);
+      return email;
+    } else {
+      // console.log("no email");
+      // return "no email";
+    }
+  }
 }
 
+function sendMail(email) {
+  // if (lineByLine(email)) {
+  //   return;
+  // }
+  var params = {
+    bar_email: email,
+  };
+  emailjs.send(serviceId, templateId, params, publicKey).then(
+    function (response) {
+      console.log("SUCCESS!", response.status, response.text);
+    },
+    function (error) {
+      console.log("FAILED...", error);
+    }
+  );
+  fs.writeFile("./emails.txt", email, (err) => {
+    if (err) throw err;
+  });
+}
+
+async function lineByLine(email) {
+  const fileStream = fs.createReadStrean("emails.txt");
+  // const rl = readline.createInterface({
+  //   input: fileStream,
+  //   crlfDelay: Infinity,
+  // });
+  for await (const line of rl) {
+    if (line === email) {
+      return true;
+    }
+  }
+}
+
+// $('a[href]')
+//   .each(function () {
+//     var linkString = $(this).attr("href");
+//     console.log(linkString);
+//     if (linkString) {
+//       if (linkString.includes("mailto:")) {
+//         console.log($(this).attr("href"));
+//         var email = $(this).attr("href").split(":").pop();
+//         // console.log(email);
+//         return email;
+//       } else {
+//         return "no email";
+//       }
+//     }
+//   });
+// }
+
 // logBars();
-scrape();
+// scrape();
+sendMail("graphicbalance6@gmail.com");
