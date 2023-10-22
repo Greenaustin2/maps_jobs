@@ -8,11 +8,6 @@ const readline = require("readline");
 let token;
 const apiKey = process.env.API_KEY;
 
-// var x = 0;
-// const serviceId = process.env.SERVICE_ID;
-// const templateId = process.env.TEMPLATE_ID;
-// const publicKey = process.env.PUBLIC_KEY;
-
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
 
 async function logBars() {
@@ -112,12 +107,9 @@ async function scrape(url) {
   var hrefs = $("a[href]")
     .map((i, el) => $(el).attr("href"))
     .get();
-  console.log("hrefs" + hrefs);
   for (let i = 0; i < hrefs.length; i++) {
     if (hrefs[i].includes("mailto:")) {
-      console.log(hrefs[i]);
       var email = hrefs[i].split(":").pop().split(".com").shift() + ".com";
-      console.log(email);
       return email;
     }
   }
@@ -134,10 +126,7 @@ async function lineByLine(email) {
   });
   //read emails.txt file line by line to confirm if address will be repeated
   for await (var line of rl) {
-    // console.log("line: " + line);
-    // console.log("email: " + email);
     if (line === email) {
-      console.log("if statement" + line);
       return false;
     }
   }
