@@ -1,1 +1,4 @@
 .env
+token.cjs
+credentials.json
+emails.txt
